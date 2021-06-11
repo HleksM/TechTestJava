@@ -26,8 +26,13 @@ public class CustomerRepository {
         try {
             statement = connection.createStatement();
             statement.executeUpdate("CREATE TABLE IF NOT EXISTS customer (id BIGINT PRIMARY KEY AUTO_INCREMENT, customer_id INT UNIQUE NOT NULL, name VARCHAR(255), country VARCHAR(255), date_of_birth DATE);");
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
+        } catch (SQLException exception) {
+            try {
+                connection.rollback();
+            } catch (SQLException sqlException) {
+                throw new RuntimeException(sqlException);
+            }
+            throw new RuntimeException(exception);
         } finally {
             try {
                 if (statement != null) {
@@ -37,7 +42,7 @@ public class CustomerRepository {
                     connection.close();
                 }
             } catch (SQLException e) {
-                System.out.println(e.getMessage());
+                System.err.println(e.getMessage());
             }
         }
     }
@@ -48,6 +53,8 @@ public class CustomerRepository {
         ResultSet resultSet = null;
         Customer newCustomer = null;
         try {
+            connection.setAutoCommit(false);
+
             preparedStatement = connection.prepareStatement("INSERT INTO customer(customer_id, name, country, date_of_birth) VALUES(?,?,?,?);");
             preparedStatement.setInt(1, customer.getCustomerId());
             preparedStatement.setString(2, customer.getName());
@@ -65,8 +72,15 @@ public class CustomerRepository {
                 newCustomer.setCountry(resultSet.getString("country"));
                 newCustomer.setDateOfBirth(resultSet.getDate("date_of_birth").toLocalDate());
             }
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
+
+            connection.commit();
+        } catch (Throwable exception) {
+            try {
+                connection.rollback();
+            } catch (SQLException sqlException) {
+                throw new RuntimeException(sqlException);
+            }
+            throw new RuntimeException(exception);
         } finally {
             try {
                 if (preparedStatement != null)
@@ -76,7 +90,7 @@ public class CustomerRepository {
                 if (resultSet != null)
                     resultSet.close();
             } catch (SQLException e) {
-                System.out.println(e.getMessage());
+                System.err.println(e.getMessage());
             }
         }
         return newCustomer;
@@ -86,21 +100,30 @@ public class CustomerRepository {
         Connection connection = getDBConnection();
         PreparedStatement preparedStatement = null;
         ResultSet resultSet = null;
-        Customer customer = new Customer();
+        Customer customer = null;
         try {
+            connection.setAutoCommit(false);
+
             preparedStatement = connection.prepareStatement("SELECT * FROM customer WHERE customer_id = ?;");
             preparedStatement.setInt(1, customerId);
             resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
+                customer = new Customer();
                 customer.setId(resultSet.getLong("id"));
                 customer.setCustomerId(resultSet.getInt("customer_id"));
                 customer.setName(resultSet.getString("name"));
                 customer.setCountry(resultSet.getString("country"));
                 customer.setDateOfBirth(resultSet.getDate("date_of_birth").toLocalDate());
             }
-            return customer;
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
+
+            connection.commit();
+        } catch (Throwable exception) {
+            try {
+                connection.rollback();
+            } catch (SQLException sqlException) {
+                throw new RuntimeException(sqlException);
+            }
+            throw new RuntimeException(exception);
         } finally {
             try {
                 if (preparedStatement != null)
@@ -110,19 +133,21 @@ public class CustomerRepository {
                 if (connection != null)
                     connection.close();
             } catch (SQLException e) {
-                System.out.println(e.getMessage());
+                System.err.println(e.getMessage());
             }
         }
-        return null;
+        return customer;
     }
 
     public List<Customer> findAll() {
-        Connection con = getDBConnection();
+        Connection connection = getDBConnection();
         PreparedStatement preparedStatement = null;
         ResultSet resultSet = null;
         List<Customer> customers = new ArrayList<>();
         try {
-            preparedStatement = con.prepareStatement("SELECT * FROM customer;");
+            connection.setAutoCommit(false);
+
+            preparedStatement = connection.prepareStatement("SELECT * FROM customer;");
             resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 Customer customer = new Customer();
@@ -133,37 +158,37 @@ public class CustomerRepository {
                 customer.setDateOfBirth(resultSet.getDate("date_of_birth").toLocalDate());
                 customers.add(customer);
             }
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
+
+            connection.commit();
+        } catch (Throwable exception) {
+            try {
+                connection.rollback();
+            } catch (SQLException sqlException) {
+                throw new RuntimeException(sqlException);
+            }
+            throw new RuntimeException(exception);
         } finally {
             try {
                 if (preparedStatement != null)
                     preparedStatement.close();
                 if (resultSet != null)
                     resultSet.close();
-                if (con != null)
-                    con.close();
+                if (connection != null)
+                    connection.close();
             } catch (SQLException e) {
-                System.out.println(e.getMessage());
+                System.err.println(e.getMessage());
             }
         }
         return customers;
     }
 
     private static Connection getDBConnection() {
-        Connection dbConnection = null;
         try {
             Class.forName(DB_DRIVER);
-        } catch (ClassNotFoundException e) {
-            System.out.println(e.getMessage());
+            return DriverManager.getConnection(DB_CONNECTION, DB_USER, DB_PASSWORD);
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
         }
-        try {
-            dbConnection = DriverManager.getConnection(DB_CONNECTION, DB_USER, DB_PASSWORD);
-            return dbConnection;
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
-        }
-        return dbConnection;
     }
 
 }

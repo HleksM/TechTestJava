@@ -1,8 +1,11 @@
 package za.co.anycompany.model;
 
+import java.util.Objects;
+
 public class Order extends GenericEntity {
     private int orderId;
     private double amount;
+    // Caps reserved for static final (constants)
     private double VAT;
     private Long customerId;
 
@@ -46,6 +49,19 @@ public class Order extends GenericEntity {
 
     public void setCustomerId(Long customerId) {
         this.customerId = customerId;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Order)) return false;
+        Order order = (Order) o;
+        return getOrderId() == order.getOrderId();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getOrderId());
     }
 
     @Override

@@ -18,14 +18,14 @@ public class CustomerService {
     public Customer findByCustomerId(int customerId) {
         Customer customer = CustomerRepository.load(customerId);
         if (customer != null) {
-            customer.setOrders(orderRepository.findByCustomerId(customer.getCustomerId()));
+            customer.setOrders(orderRepository.findAllByCustomerId(customer.getCustomerId()));
         }
         return customer;
     }
 
     public List<Customer> findAll() {
         List<Customer> customers = customerRepository.findAll();
-        customers.forEach(customer -> customer.setOrders(orderRepository.findByCustomerId(customer.getCustomerId())));
+        customers.forEach(customer -> customer.setOrders(orderRepository.findAllByCustomerId(customer.getCustomerId())));
         return customers;
     }
 }

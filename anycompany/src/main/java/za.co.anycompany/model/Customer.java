@@ -21,14 +21,6 @@ public class Customer extends GenericEntity {
         this.dateOfBirth = dateOfBirth;
     }
 
-    public Customer(int customerId, String name, String country, LocalDate dateOfBirth, List<Order> orders) {
-        this.customerId = customerId;
-        this.name = name;
-        this.country = country;
-        this.dateOfBirth = dateOfBirth;
-        this.orders = orders;
-    }
-
     public int getCustomerId() {
         return customerId;
     }
